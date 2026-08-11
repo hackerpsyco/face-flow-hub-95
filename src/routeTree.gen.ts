@@ -18,6 +18,7 @@ import { Route as AdminDevicesRouteImport } from './routes/admin.devices'
 import { Route as AdminEmployeesRouteImport } from './routes/admin.employees'
 import { Route as AdminReportsRouteImport } from './routes/admin.reports'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
+import { Route as KioskDeviceIdRouteImport } from './routes/kiosk.$deviceId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -64,6 +65,11 @@ const AdminSettingsRoute = AdminSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AdminRoute,
 } as any)
+const KioskDeviceIdRoute = KioskDeviceIdRouteImport.update({
+  id: '/kiosk/$deviceId',
+  path: '/kiosk/$deviceId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -75,6 +81,7 @@ export interface FileRoutesByFullPath {
   '/admin/employees': typeof AdminEmployeesRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/kiosk/$deviceId': typeof KioskDeviceIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -86,6 +93,7 @@ export interface FileRoutesByTo {
   '/admin/employees': typeof AdminEmployeesRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/kiosk/$deviceId': typeof KioskDeviceIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -98,6 +106,7 @@ export interface FileRoutesById {
   '/admin/employees': typeof AdminEmployeesRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/kiosk/$deviceId': typeof KioskDeviceIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -111,6 +120,7 @@ export interface FileRouteTypes {
     | '/admin/employees'
     | '/admin/reports'
     | '/admin/settings'
+    | '/kiosk/$deviceId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -122,6 +132,7 @@ export interface FileRouteTypes {
     | '/admin/employees'
     | '/admin/reports'
     | '/admin/settings'
+    | '/kiosk/$deviceId'
   id:
     | '__root__'
     | '/'
@@ -133,12 +144,14 @@ export interface FileRouteTypes {
     | '/admin/employees'
     | '/admin/reports'
     | '/admin/settings'
+    | '/kiosk/$deviceId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
   LoginRoute: typeof LoginRoute
+  KioskDeviceIdRoute: typeof KioskDeviceIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -206,6 +219,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSettingsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/kiosk/$deviceId': {
+      id: '/kiosk/$deviceId'
+      path: '/kiosk/$deviceId'
+      fullPath: '/kiosk/$deviceId'
+      preLoaderRoute: typeof KioskDeviceIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -233,6 +253,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
   LoginRoute: LoginRoute,
+  KioskDeviceIdRoute: KioskDeviceIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
