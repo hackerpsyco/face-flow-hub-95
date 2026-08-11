@@ -64,7 +64,7 @@ export const employees: Employee[] = NAMES.map((name, i) => ({
   id: `emp-${i + 1}`,
   employeeId: `EMP-${(1024 + i).toString()}`,
   name,
-  department: DEPARTMENTS[i % DEPARTMENTS.length],
+  department: DEPARTMENTS[i % DEPARTMENTS.length]!,
   status: i % 9 === 8 ? "inactive" : "active",
   faceEnrolled: i % 5 !== 3,
   photo: avatar(name),
@@ -102,8 +102,8 @@ const TIMES: Array<[string, string | null, AttendanceStatus]> = [
 ];
 
 export const attendance: AttendanceRecord[] = Array.from({ length: 42 }, (_, i) => {
-  const emp = employees[i % employees.length];
-  const [checkIn, checkOut, status] = TIMES[i % TIMES.length];
+  const emp = employees[i % employees.length]!;
+  const [checkIn, checkOut, status] = TIMES[i % TIMES.length]!;
   const d = new Date(2026, 7, 11 - Math.floor(i / 6));
   return {
     id: `att-${i + 1}`,
@@ -114,7 +114,7 @@ export const attendance: AttendanceRecord[] = Array.from({ length: 42 }, (_, i) 
     checkIn,
     checkOut,
     confidence: status === "absent" ? 0 : 0.88 + ((i * 7) % 11) / 100,
-    device: devices[i % devices.length].name,
+    device: devices[i % devices.length]!.name,
     status,
   };
 });
