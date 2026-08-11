@@ -14,6 +14,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AdminAttendanceRouteImport } from './routes/admin.attendance'
 import { Route as AdminDashboardRouteImport } from './routes/admin.dashboard'
+import { Route as AdminDevicesRouteImport } from './routes/admin.devices'
 import { Route as AdminEmployeesRouteImport } from './routes/admin.employees'
 
 const IndexRoute = IndexRouteImport.update({
@@ -41,6 +42,11 @@ const AdminDashboardRoute = AdminDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminDevicesRoute = AdminDevicesRouteImport.update({
+  id: '/devices',
+  path: '/devices',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminEmployeesRoute = AdminEmployeesRouteImport.update({
   id: '/employees',
   path: '/employees',
@@ -53,6 +59,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/admin/attendance': typeof AdminAttendanceRoute
   '/admin/dashboard': typeof AdminDashboardRoute
+  '/admin/devices': typeof AdminDevicesRoute
   '/admin/employees': typeof AdminEmployeesRoute
 }
 export interface FileRoutesByTo {
@@ -61,6 +68,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/admin/attendance': typeof AdminAttendanceRoute
   '/admin/dashboard': typeof AdminDashboardRoute
+  '/admin/devices': typeof AdminDevicesRoute
   '/admin/employees': typeof AdminEmployeesRoute
 }
 export interface FileRoutesById {
@@ -70,6 +78,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/admin/attendance': typeof AdminAttendanceRoute
   '/admin/dashboard': typeof AdminDashboardRoute
+  '/admin/devices': typeof AdminDevicesRoute
   '/admin/employees': typeof AdminEmployeesRoute
 }
 export interface FileRouteTypes {
@@ -80,6 +89,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/admin/attendance'
     | '/admin/dashboard'
+    | '/admin/devices'
     | '/admin/employees'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -88,6 +98,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/admin/attendance'
     | '/admin/dashboard'
+    | '/admin/devices'
     | '/admin/employees'
   id:
     | '__root__'
@@ -96,6 +107,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/admin/attendance'
     | '/admin/dashboard'
+    | '/admin/devices'
     | '/admin/employees'
   fileRoutesById: FileRoutesById
 }
@@ -142,6 +154,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminDashboardRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/devices': {
+      id: '/admin/devices'
+      path: '/devices'
+      fullPath: '/admin/devices'
+      preLoaderRoute: typeof AdminDevicesRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/employees': {
       id: '/admin/employees'
       path: '/employees'
@@ -155,12 +174,14 @@ declare module '@tanstack/react-router' {
 interface AdminRouteChildren {
   AdminAttendanceRoute: typeof AdminAttendanceRoute
   AdminDashboardRoute: typeof AdminDashboardRoute
+  AdminDevicesRoute: typeof AdminDevicesRoute
   AdminEmployeesRoute: typeof AdminEmployeesRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminAttendanceRoute: AdminAttendanceRoute,
   AdminDashboardRoute: AdminDashboardRoute,
+  AdminDevicesRoute: AdminDevicesRoute,
   AdminEmployeesRoute: AdminEmployeesRoute,
 }
 
