@@ -16,6 +16,7 @@ import { Route as AdminAttendanceRouteImport } from './routes/admin.attendance'
 import { Route as AdminDashboardRouteImport } from './routes/admin.dashboard'
 import { Route as AdminDevicesRouteImport } from './routes/admin.devices'
 import { Route as AdminEmployeesRouteImport } from './routes/admin.employees'
+import { Route as AdminReportsRouteImport } from './routes/admin.reports'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -52,6 +53,11 @@ const AdminEmployeesRoute = AdminEmployeesRouteImport.update({
   path: '/employees',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminReportsRoute = AdminReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => AdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -61,6 +67,7 @@ export interface FileRoutesByFullPath {
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/devices': typeof AdminDevicesRoute
   '/admin/employees': typeof AdminEmployeesRoute
+  '/admin/reports': typeof AdminReportsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -70,6 +77,7 @@ export interface FileRoutesByTo {
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/devices': typeof AdminDevicesRoute
   '/admin/employees': typeof AdminEmployeesRoute
+  '/admin/reports': typeof AdminReportsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -80,6 +88,7 @@ export interface FileRoutesById {
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/devices': typeof AdminDevicesRoute
   '/admin/employees': typeof AdminEmployeesRoute
+  '/admin/reports': typeof AdminReportsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -91,6 +100,7 @@ export interface FileRouteTypes {
     | '/admin/dashboard'
     | '/admin/devices'
     | '/admin/employees'
+    | '/admin/reports'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -100,6 +110,7 @@ export interface FileRouteTypes {
     | '/admin/dashboard'
     | '/admin/devices'
     | '/admin/employees'
+    | '/admin/reports'
   id:
     | '__root__'
     | '/'
@@ -109,6 +120,7 @@ export interface FileRouteTypes {
     | '/admin/dashboard'
     | '/admin/devices'
     | '/admin/employees'
+    | '/admin/reports'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -168,6 +180,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminEmployeesRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/reports': {
+      id: '/admin/reports'
+      path: '/reports'
+      fullPath: '/admin/reports'
+      preLoaderRoute: typeof AdminReportsRouteImport
+      parentRoute: typeof AdminRoute
+    }
   }
 }
 
@@ -176,6 +195,7 @@ interface AdminRouteChildren {
   AdminDashboardRoute: typeof AdminDashboardRoute
   AdminDevicesRoute: typeof AdminDevicesRoute
   AdminEmployeesRoute: typeof AdminEmployeesRoute
+  AdminReportsRoute: typeof AdminReportsRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
@@ -183,6 +203,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminDashboardRoute: AdminDashboardRoute,
   AdminDevicesRoute: AdminDevicesRoute,
   AdminEmployeesRoute: AdminEmployeesRoute,
+  AdminReportsRoute: AdminReportsRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
