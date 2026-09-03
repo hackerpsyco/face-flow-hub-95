@@ -32,7 +32,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { employees as seed, type Employee } from "@/lib/mock-data";
+import { type Employee } from "@/lib/mock-data";
 import { api } from "@/lib/api";
 
 export const Route = createFileRoute("/admin/employees")({
@@ -55,7 +55,7 @@ export const Route = createFileRoute("/admin/employees")({
 });
 
 function EmployeesPage() {
-  const [rows, setRows] = React.useState<Employee[]>(seed);
+  const [rows, setRows] = React.useState<Employee[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [saving, setSaving] = React.useState(false);
   const [query, setQuery] = React.useState("");
@@ -75,10 +75,10 @@ function EmployeesPage() {
       setLoading(true);
       const data = await api.getEmployees(query, dept, status);
       if (Array.isArray(data)) {
-        setRows(data.length > 0 ? data : seed);
+        setRows(data);
       }
     } catch {
-      // Keep static seed if backend is offline
+      // Keep empty if network error
     } finally {
       setLoading(false);
     }
@@ -122,7 +122,6 @@ function EmployeesPage() {
       setCapturedShots([]);
       loadData();
     } catch (err: any) {
-      // Optimistic local add if network fails
       const created: Employee = {
         id: `emp-${Date.now()}`,
         employeeId: formEmpId,
