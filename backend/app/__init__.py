@@ -14,16 +14,15 @@ def create_app(config_name=None):
     # Initialize extensions
     db.init_app(app)
     jwt.init_app(app)
-    cors.init_app(app, resources={r"/api/*": {"origins": app.config.get("CORS_ORIGIN", "*")}})
+    cors.init_app(app, resources={r"/*": {"origins": app.config.get("CORS_ORIGIN", "*")}})
     init_redis(app)
 
-    # Register blueprints under /api prefix
-    app.register_blueprint(health_bp, url_prefix="/api")
-    app.register_blueprint(auth_bp, url_prefix="/api")
-    app.register_blueprint(employees_bp, url_prefix="/api")
-    app.register_blueprint(attendance_bp, url_prefix="/api")
-    app.register_blueprint(devices_bp, url_prefix="/api")
-    app.register_blueprint(dashboard_bp, url_prefix="/api")
+    # Register blueprints under both /api and root prefix to guarantee Vercel routing
+    bps = [health_bp, auth_bp, employees_bp, attendance_bp, devices_bp, dashboard_bp]
+    for bp in bps:
+        app.register_blueprint(bp, url_prefix="/api")
+        # Register with unique name for fallback without prefix
+        app.register_blueprint(bp, url_prefix="", name=f"{bp.name}_root")
 
     # Serve static uploaded files if needed
     @app.route("/static/uploads/<path:filename>")
@@ -37,10 +36,13 @@ def create_app(config_name=None):
 
     @app.errorhandler(500)
     def server_error(e):
-        return jsonify({"error": "Internal server error"}), 500
+        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
 
-    # Ensure tables exist in dev environment
-    with app.app_context():
-        db.create_all()
+    # Ensure tables exist (safe fail for serverless cold start)
+    try:
+        with app.app_context():
+            db.create_all()
+    except Exception as e:
+        print(f"[DB] Initial db.create_all warning: {e}")
 
     return app
