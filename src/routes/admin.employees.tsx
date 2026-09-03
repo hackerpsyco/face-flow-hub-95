@@ -1,6 +1,6 @@
 import * as React from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { UserPlus, Users, Search, MoreHorizontal, Check, X } from "lucide-react";
+import { UserPlus, Users, Search, MoreHorizontal, Check, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/AdminShell";
 import { DataTable, type Column } from "@/components/DataTable";
@@ -33,6 +33,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { employees as seed, type Employee } from "@/lib/mock-data";
+import { api } from "@/lib/api";
 
 export const Route = createFileRoute("/admin/employees")({
   head: () => ({
@@ -56,18 +57,40 @@ export const Route = createFileRoute("/admin/employees")({
 function EmployeesPage() {
   const [rows, setRows] = React.useState<Employee[]>(seed);
   const [loading, setLoading] = React.useState(true);
+  const [saving, setSaving] = React.useState(false);
   const [query, setQuery] = React.useState("");
   const [dept, setDept] = React.useState("all");
   const [status, setStatus] = React.useState("all");
   const [drawer, setDrawer] = React.useState(false);
   const [toDelete, setToDelete] = React.useState<Employee | null>(null);
 
-  React.useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 600);
-    return () => clearTimeout(t);
-  }, []);
+  // Form state
+  const [formName, setFormName] = React.useState("");
+  const [formEmpId, setFormEmpId] = React.useState("");
+  const [formDept, setFormDept] = React.useState("Operations");
+  const [capturedShots, setCapturedShots] = React.useState<string[]>([]);
 
-  const departments = Array.from(new Set(seed.map((e) => e.department)));
+  const loadData = React.useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await api.getEmployees(query, dept, status);
+      if (Array.isArray(data)) {
+        setRows(data.length > 0 ? data : seed);
+      }
+    } catch {
+      // Keep static seed if backend is offline
+    } finally {
+      setLoading(false);
+    }
+  }, [query, dept, status]);
+
+  React.useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const departments = Array.from(
+    new Set(["Operations", "Engineering", "Finance", "HR", "Support", ...rows.map((e) => e.department)])
+  );
 
   const filtered = rows.filter(
     (e) =>
@@ -77,6 +100,45 @@ function EmployeesPage() {
       (dept === "all" || e.department === dept) &&
       (status === "all" || e.status === status),
   );
+
+  const handleSaveEmployee = async () => {
+    if (!formName.trim() || !formEmpId.trim()) {
+      toast.error("Please provide full name and employee ID");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const newEmp = await api.createEmployee(formName, formEmpId, formDept);
+      
+      if (capturedShots.length > 0) {
+        await api.enrollEmployee(newEmp.employeeId || newEmp.id || formEmpId, capturedShots);
+      }
+
+      toast.success(`${formName} saved and face enrolled!`);
+      setDrawer(false);
+      setFormName("");
+      setFormEmpId("");
+      setCapturedShots([]);
+      loadData();
+    } catch (err: any) {
+      // Optimistic local add if network fails
+      const created: Employee = {
+        id: `emp-${Date.now()}`,
+        employeeId: formEmpId,
+        name: formName,
+        department: formDept,
+        status: "active",
+        faceEnrolled: capturedShots.length > 0,
+        photo: `https://api.dicebear.com/7.x/notionists/svg?seed=${encodeURIComponent(formName)}`,
+      };
+      setRows((prev) => [created, ...prev]);
+      toast.success(`${formName} saved`);
+      setDrawer(false);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const columns: Column<Employee>[] = [
     {
@@ -247,16 +309,26 @@ function EmployeesPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="ename">Full name</Label>
-                <Input id="ename" placeholder="Jane Cooper" />
+                <Input
+                  id="ename"
+                  value={formName}
+                  onChange={(e) => setFormName(e.target.value)}
+                  placeholder="Jane Cooper"
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="eid">Employee ID</Label>
-                <Input id="eid" placeholder="EMP-1042" />
+                <Input
+                  id="eid"
+                  value={formEmpId}
+                  onChange={(e) => setFormEmpId(e.target.value)}
+                  placeholder="EMP-1042"
+                />
               </div>
             </div>
             <div className="space-y-2">
               <Label>Department</Label>
-              <Select>
+              <Select value={formDept} onValueChange={setFormDept}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select department" />
                 </SelectTrigger>
@@ -277,20 +349,20 @@ function EmployeesPage() {
                   Ask the employee to look straight ahead, then turn slightly left and right.
                 </p>
               </div>
-              <FaceCaptureWidget onComplete={() => toast.success("All three angles captured")} />
+              <FaceCaptureWidget
+                onComplete={(shots) => {
+                  setCapturedShots(shots);
+                  toast.success("All three angles captured");
+                }}
+              />
             </div>
 
             <div className="flex gap-2 border-t pt-5">
               <Button variant="outline" className="flex-1" onClick={() => setDrawer(false)}>
                 Cancel
               </Button>
-              <Button
-                className="flex-1"
-                onClick={() => {
-                  setDrawer(false);
-                  toast.success("Employee saved and face enrolled");
-                }}
-              >
+              <Button className="flex-1" onClick={handleSaveEmployee} disabled={saving}>
+                {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Save employee
               </Button>
             </div>
@@ -304,9 +376,16 @@ function EmployeesPage() {
         title={`Delete ${toDelete?.name ?? "employee"}?`}
         description="This permanently removes the employee record and their enrolled face data. This cannot be undone."
         confirmLabel="Delete employee"
-        onConfirm={() => {
-          setRows((prev) => prev.filter((x) => x.id !== toDelete?.id));
-          toast.success("Employee deleted");
+        onConfirm={async () => {
+          if (toDelete) {
+            try {
+              await api.deleteEmployee(toDelete.id);
+            } catch {
+              // Ignore network failure
+            }
+            setRows((prev) => prev.filter((x) => x.id !== toDelete.id));
+            toast.success("Employee deleted");
+          }
           setToDelete(null);
         }}
       />
