@@ -1,6 +1,6 @@
 import * as React from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Copy, Eye, EyeOff, MonitorSmartphone, Plus, QrCode, Loader2 } from "lucide-react";
+import { Copy, Eye, EyeOff, MonitorSmartphone, Plus, QrCode } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/AdminShell";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -18,7 +18,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { devices as seed, type Device } from "@/lib/mock-data";
-import { api } from "@/lib/api";
 
 export const Route = createFileRoute("/admin/devices")({
   head: () => ({
@@ -76,7 +75,7 @@ function DeviceCard({ device }: { device: Device }) {
               className="h-7 w-7"
               onClick={() => {
                 navigator.clipboard?.writeText(device.apiKey);
-                toast.success("API key copied to clipboard");
+                toast.success("API key copied");
               }}
             >
               <Copy className="h-3.5 w-3.5" />
@@ -90,61 +89,32 @@ function DeviceCard({ device }: { device: Device }) {
 
 function DevicesPage() {
   const [loading, setLoading] = React.useState(true);
-  const [saving, setSaving] = React.useState(false);
   const [devices, setDevices] = React.useState<Device[]>(seed);
   const [open, setOpen] = React.useState(false);
   const [name, setName] = React.useState("");
   const [location, setLocation] = React.useState("");
 
-  const loadDevices = React.useCallback(async () => {
-    try {
-      setLoading(true);
-      const res = await api.getDevices();
-      if (Array.isArray(res) && res.length > 0) {
-        setDevices(res);
-      }
-    } catch {
-      // Keep initial seed if backend is starting
-    } finally {
-      setLoading(false);
-    }
+  React.useEffect(() => {
+    const t = setTimeout(() => setLoading(false), 600);
+    return () => clearTimeout(t);
   }, []);
 
-  React.useEffect(() => {
-    loadDevices();
-  }, [loadDevices]);
-
-  const register = async () => {
-    if (!name.trim()) {
-      toast.error("Please enter a device name");
-      return;
-    }
-    setSaving(true);
-    try {
-      const created = await api.registerDevice(name, location || "HQ Lobby");
-      toast.success(`Device "${created.name}" registered! API Key created.`);
-      setOpen(false);
-      setName("");
-      setLocation("");
-      loadDevices();
-    } catch (err: any) {
-      // Local fallback
-      const fallback: Device = {
-        id: `dev-${devices.length + 1}`,
-        name: name || `Kiosk ${devices.length + 1}`,
-        location: location || "HQ Lobby",
-        lastActive: "Just now",
-        online: true,
+  const register = () => {
+    setDevices((prev) => [
+      {
+        id: `dev-${prev.length + 1}`,
+        name: name || `Kiosk ${prev.length + 1}`,
+        location: location || "Unassigned",
+        lastActive: "Never",
+        online: false,
         apiKey: `fa_live_${Math.random().toString(36).slice(2, 14)}`,
-      };
-      setDevices((prev) => [fallback, ...prev]);
-      setOpen(false);
-      setName("");
-      setLocation("");
-      toast.success("Device created locally");
-    } finally {
-      setSaving(false);
-    }
+      },
+      ...prev,
+    ]);
+    setOpen(false);
+    setName("");
+    setLocation("");
+    toast.success("Device registered — scan the QR code on the kiosk to pair");
   };
 
   return (
@@ -187,7 +157,7 @@ function DevicesPage() {
           <DialogHeader>
             <DialogTitle>Register new device</DialogTitle>
             <DialogDescription>
-              We generate a secure API key for the kiosk terminal. Enter location & name below.
+              We generate an API key and pairing code. Scan it from the kiosk to self-configure.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -210,11 +180,12 @@ function DevicesPage() {
               />
             </div>
             <div className="flex items-center gap-4 rounded-lg border border-dashed p-4">
-              <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-md bg-muted">
-                <QrCode className="h-10 w-10 text-muted-foreground" />
+              <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-md bg-muted">
+                <QrCode className="h-12 w-12 text-muted-foreground" />
               </div>
               <p className="text-sm text-muted-foreground">
-                An API key (e.g. <code className="rounded bg-muted px-1">fa_live_...</code>) is generated upon creation.
+                A pairing QR code appears here once the device is created. It expires after 15
+                minutes.
               </p>
             </div>
           </div>
@@ -222,10 +193,7 @@ function DevicesPage() {
             <Button variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={register} disabled={saving}>
-              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Create device
-            </Button>
+            <Button onClick={register}>Create device</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
