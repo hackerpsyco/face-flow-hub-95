@@ -16,7 +16,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { attendance, employees, type AttendanceRecord } from "@/lib/mock-data";
+import { type AttendanceRecord } from "@/lib/mock-data";
+import { api } from "@/lib/api";
 
 export const Route = createFileRoute("/admin/attendance")({
   head: () => ({
@@ -39,18 +40,47 @@ export const Route = createFileRoute("/admin/attendance")({
 
 function AttendancePage() {
   const [loading, setLoading] = React.useState(true);
+  const [logs, setLogs] = React.useState<AttendanceRecord[]>([]);
   const [query, setQuery] = React.useState("");
   const [dept, setDept] = React.useState("all");
   const [status, setStatus] = React.useState("all");
 
+  const loadLogs = React.useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await api.getAttendanceLogs("", dept, status);
+      if (Array.isArray(data)) {
+        setLogs(
+          data.map((item: any, i: number) => ({
+            id: item.id || `att-${i}`,
+            employee: item.employee_name || item.employee || "Employee",
+            employeeId: item.employee_code || item.employeeId || "EMP-00",
+            department: item.department || "Operations",
+            date: item.date || new Date().toISOString().split("T")[0]!,
+            checkIn: item.check_in || item.checkIn || "--:--",
+            checkOut: item.check_out || item.checkOut || null,
+            confidence: item.confidence || 0.95,
+            device: item.device_name || item.device || "Front Kiosk",
+            status: item.status || "present",
+          }))
+        );
+      }
+    } catch {
+      // Fallback cleanly
+    } finally {
+      setLoading(false);
+    }
+  }, [dept, status]);
+
   React.useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 600);
-    return () => clearTimeout(t);
-  }, []);
+    loadLogs();
+  }, [loadLogs]);
 
-  const departments = Array.from(new Set(employees.map((e) => e.department)));
+  const departments = Array.from(
+    new Set(["Operations", "Engineering", "Finance", "HR", "Support", ...logs.map((e) => e.department)])
+  );
 
-  const rows = attendance.filter(
+  const filtered = logs.filter(
     (a) =>
       (query === "" || a.employee.toLowerCase().includes(query.toLowerCase())) &&
       (dept === "all" || a.department === dept) &&
@@ -78,15 +108,19 @@ function AttendancePage() {
       cell: (r) => <span className="text-sm tabular-nums">{r.date}</span>,
     },
     {
-      key: "in",
-      header: "Check in",
-      cell: (r) => <span className="text-sm tabular-nums">{r.checkIn}</span>,
+      key: "department",
+      header: "Department",
+      sortable: true,
+      sortValue: (r) => r.department,
+      cell: (r) => <span className="text-sm">{r.department}</span>,
     },
     {
-      key: "out",
-      header: "Check out",
+      key: "times",
+      header: "In / Out",
       cell: (r) => (
-        <span className="text-sm tabular-nums text-muted-foreground">{r.checkOut ?? "—"}</span>
+        <span className="text-sm tabular-nums">
+          {r.checkIn} — {r.checkOut ?? "—"}
+        </span>
       ),
     },
     {
@@ -94,16 +128,15 @@ function AttendancePage() {
       header: "Confidence",
       sortable: true,
       sortValue: (r) => r.confidence,
-      cell: (r) =>
-        r.confidence ? (
-          <span className="text-sm tabular-nums">{(r.confidence * 100).toFixed(1)}%</span>
-        ) : (
-          <span className="text-sm text-muted-foreground">—</span>
-        ),
+      cell: (r) => (
+        <span className="text-sm tabular-nums font-medium text-emerald-600 dark:text-emerald-400">
+          {(r.confidence * 100).toFixed(1)}%
+        </span>
+      ),
     },
     {
       key: "device",
-      header: "Device / location",
+      header: "Device",
       cell: (r) => <span className="text-sm text-muted-foreground">{r.device}</span>,
     },
     {
@@ -118,29 +151,32 @@ function AttendancePage() {
   return (
     <div className="mx-auto max-w-7xl">
       <PageHeader
-        title="Attendance"
-        description="Every verified check-in, with the device and match confidence behind it."
+        title="Attendance log"
+        description="Every face verification attempt recorded across kiosks."
         actions={
-          <Button variant="outline" onClick={() => toast.success("Export started — CSV ready soon")}>
-            <Download className="mr-2 h-4 w-4" /> Export
+          <Button
+            variant="outline"
+            onClick={() => toast.success("Exporting attendance CSV...")}
+          >
+            <Download className="mr-2 h-4 w-4" /> Export CSV
           </Button>
         }
       />
 
       <div className="surface-card">
         <div className="flex flex-wrap items-center gap-3 border-b p-4">
-          <DateRangePicker />
-          <div className="relative min-w-[200px] flex-1">
+          <div className="relative min-w-[220px] flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search employee"
+              placeholder="Search by employee name..."
               className="pl-9"
             />
           </div>
+          <DateRangePicker />
           <Select value={dept} onValueChange={setDept}>
-            <SelectTrigger className="w-[170px]">
+            <SelectTrigger className="w-[160px]">
               <SelectValue placeholder="Department" />
             </SelectTrigger>
             <SelectContent>
@@ -153,7 +189,7 @@ function AttendancePage() {
             </SelectContent>
           </Select>
           <Select value={status} onValueChange={setStatus}>
-            <SelectTrigger className="w-[150px]">
+            <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -167,14 +203,13 @@ function AttendancePage() {
 
         <DataTable
           columns={columns}
-          rows={rows}
-          pageSize={10}
+          rows={filtered}
           loading={loading}
           empty={
             <EmptyState
               icon={CalendarCheck}
-              title="No attendance records"
-              description="Nothing matches these filters. Try a wider date range or clear the department filter."
+              title="No check-ins recorded"
+              description="Check-in records will appear here as employees scan their faces at kiosks."
             />
           }
         />

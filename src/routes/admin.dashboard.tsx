@@ -25,7 +25,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/EmptyState";
-import { recentActivity, trend7, trend30, employees } from "@/lib/mock-data";
+import { api } from "@/lib/api";
 
 export const Route = createFileRoute("/admin/dashboard")({
   head: () => ({
@@ -46,21 +46,66 @@ export const Route = createFileRoute("/admin/dashboard")({
   component: DashboardPage,
 });
 
-function DashboardPage() {
+export function DashboardPage() {
   const [loading, setLoading] = React.useState(true);
   const [range, setRange] = React.useState<"7" | "30">("7");
-  const data = range === "7" ? trend7 : trend30;
+
+  const [stats, setStats] = React.useState({
+    present: 0,
+    absent: 0,
+    late: 0,
+    totalEmployees: 0,
+  });
+
+  const [recentCheckins, setRecentCheckins] = React.useState<any[]>([]);
+  const [trendData, setTrendData] = React.useState<any[]>([]);
+
+  const todayDateStr = React.useMemo(() => {
+    const d = new Date();
+    return d.toLocaleDateString("en-US", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  }, []);
+
+  const loadDashboardData = React.useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await api.getDashboardStats();
+      if (res) {
+        setStats({
+          present: res.present_today ?? res.present ?? 0,
+          absent: res.absent_today ?? res.absent ?? 0,
+          late: res.late_today ?? res.late ?? 0,
+          totalEmployees: res.total_employees ?? res.total ?? 0,
+        });
+
+        if (Array.isArray(res.recent_checkins)) {
+          setRecentCheckins(res.recent_checkins);
+        }
+
+        if (Array.isArray(res.trend)) {
+          setTrendData(res.trend);
+        }
+      }
+    } catch {
+      // If backend stats call fails, fallback gracefully to zeros
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   React.useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 600);
-    return () => clearTimeout(t);
-  }, []);
+    loadDashboardData();
+  }, [loadDashboardData]);
 
   return (
     <div className="mx-auto max-w-7xl">
       <PageHeader
-        title="Good morning, Alex"
-        description="Tuesday, 11 August 2026 · Northwind Ltd."
+        title="Good morning, Admin"
+        description={`${todayDateStr} · Northwind Ltd.`}
         actions={
           <>
             <Button variant="outline" asChild>
@@ -82,24 +127,28 @@ function DashboardPage() {
           loading={loading}
           icon={UserCheck}
           label="Present today"
-          value={149}
-          trend={2}
+          value={stats.present}
           tone="success"
         />
         <StatCard
           loading={loading}
           icon={UserX}
           label="Absent today"
-          value={5}
-          trend={-14}
+          value={stats.absent}
           tone="destructive"
         />
-        <StatCard loading={loading} icon={Clock} label="Late arrivals" value={8} trend={5} tone="warning" />
+        <StatCard
+          loading={loading}
+          icon={Clock}
+          label="Late arrivals"
+          value={stats.late}
+          tone="warning"
+        />
         <StatCard
           loading={loading}
           icon={Users}
           label="Total employees"
-          value={employees.length * 9}
+          value={stats.totalEmployees}
           tone="primary"
         />
       </div>
@@ -121,9 +170,14 @@ function DashboardPage() {
           <div className="h-[300px] p-4">
             {loading ? (
               <Skeleton className="h-full w-full" />
+            ) : trendData.length === 0 ? (
+              <div className="flex h-full flex-col items-center justify-center text-center text-muted-foreground">
+                <Activity className="mb-2 h-8 w-8 text-muted" />
+                <p className="text-sm">No trend data recorded yet</p>
+              </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={data} margin={{ left: -20, right: 8, top: 8 }}>
+                <AreaChart data={trendData} margin={{ left: -20, right: 8, top: 8 }}>
                   <defs>
                     <linearGradient id="present" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="var(--color-chart-1)" stopOpacity={0.35} />
@@ -185,24 +239,24 @@ function DashboardPage() {
                   <Skeleton key={i} className="h-12 w-full" />
                 ))}
               </div>
-            ) : recentActivity.length === 0 ? (
+            ) : recentCheckins.length === 0 ? (
               <EmptyState
                 icon={Activity}
                 title="No check-ins yet"
                 description="Activity will appear here as employees check in at a kiosk."
               />
             ) : (
-              recentActivity.map((a) => (
-                <div key={a.id} className="flex items-center gap-3 px-5 py-3">
+              recentCheckins.map((a: any, i: number) => (
+                <div key={a.id || i} className="flex items-center gap-3 px-5 py-3">
                   <Avatar className="h-9 w-9">
-                    <AvatarImage src={a.photo} alt="" />
-                    <AvatarFallback>{a.employee.slice(0, 2)}</AvatarFallback>
+                    <AvatarImage src={a.photo_url || a.photo || `https://api.dicebear.com/7.x/notionists/svg?seed=${encodeURIComponent(a.employee_name || "User")}`} alt="" />
+                    <AvatarFallback>{(a.employee_name || a.employee || "EM").slice(0, 2)}</AvatarFallback>
                   </Avatar>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{a.employee}</p>
-                    <p className="truncate text-xs text-muted-foreground">{a.device}</p>
+                    <p className="truncate text-sm font-medium">{a.employee_name || a.employee || "Employee"}</p>
+                    <p className="truncate text-xs text-muted-foreground">{a.device_name || a.device || "Front Kiosk"}</p>
                   </div>
-                  <span className="text-sm tabular-nums text-muted-foreground">{a.checkIn}</span>
+                  <span className="text-sm tabular-nums text-muted-foreground">{a.check_in || a.checkIn || "--:--"}</span>
                 </div>
               ))
             )}
