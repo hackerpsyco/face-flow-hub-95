@@ -28,7 +28,15 @@ const nav = [
 function NavList({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   return (
-    <nav className="flex flex-1 flex-col gap-1 p-3">
+    <nav className="flex flex-1 flex-col gap-1.5 p-3">
+      <div className="mb-2 px-1">
+        <Button asChild size="sm" className="w-full justify-start gap-2 shadow-xs" onClick={onNavigate}>
+          <Link to="/kiosk/$deviceId" params={{ deviceId: "dev-1" }}>
+            <ScanFace className="h-4 w-4" />
+            <span>Open Kiosk Mode</span>
+          </Link>
+        </Button>
+      </div>
       {nav.map((item) => {
         const active = pathname === item.to;
         return (
@@ -84,7 +92,7 @@ export function AdminShell() {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-20 flex h-14 items-center justify-between gap-3 border-b bg-card/80 px-4 backdrop-blur lg:px-8">
+        <header className="sticky top-0 z-20 flex h-14 items-center justify-between gap-2 border-b bg-card/80 px-3 backdrop-blur lg:px-8">
           <div className="flex items-center gap-2">
             <Sheet open={open} onOpenChange={setOpen}>
               <SheetTrigger asChild>
@@ -97,23 +105,24 @@ export function AdminShell() {
                 <NavList onNavigate={() => setOpen(false)} />
               </SheetContent>
             </Sheet>
-            <span className="text-sm font-medium text-muted-foreground lg:hidden">Presence</span>
+            <span className="text-sm font-semibold tracking-tight text-foreground lg:hidden">Presence</span>
           </div>
-          <div className="flex items-center gap-3">
-            <Link
-              to="/kiosk/$deviceId"
-              params={{ deviceId: "dev-1" }}
-              className="hidden text-sm font-medium text-primary hover:underline sm:block"
-            >
-              Open kiosk mode
-            </Link>
+
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Button asChild size="sm" className="h-9 gap-1.5 text-xs font-semibold sm:text-sm">
+              <Link to="/kiosk/$deviceId" params={{ deviceId: "dev-1" }}>
+                <ScanFace className="h-4 w-4" />
+                <span>Face Check-in</span>
+              </Link>
+            </Button>
             <Avatar className="h-8 w-8">
               <AvatarImage src="https://api.dicebear.com/7.x/notionists/svg?seed=Admin" alt="" />
               <AvatarFallback>AD</AvatarFallback>
             </Avatar>
           </div>
         </header>
-        <main className="flex-1 px-4 py-6 lg:px-8 lg:py-8">
+
+        <main className="flex-1 px-3 py-4 sm:px-6 lg:px-8 lg:py-8">
           <Outlet />
         </main>
       </div>
@@ -131,10 +140,10 @@ export function PageHeader({
   actions?: React.ReactNode;
 }) {
   return (
-    <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+    <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-        {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
+        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{title}</h1>
+        {description && <p className="mt-1 text-xs text-muted-foreground sm:text-sm">{description}</p>}
       </div>
       {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
     </div>
