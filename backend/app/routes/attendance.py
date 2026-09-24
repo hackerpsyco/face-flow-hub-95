@@ -16,8 +16,8 @@ def scan_attendance():
     """
     POST /api/attendance/scan
     Kiosk camera face scan endpoint.
-    Payload: { device_id, image_base64 }                                   which device thids face id   try last now works
-    Response contract: { matched, employee_name, confidence, timestamp, employee, message }  // 4 retryinghhhhhhfd  means what
+    Payload: { device_id, image_base64 }                                   which device face id   try last no  means what
+    Response contract: { matched, employee_name, confidence, timestamp, employee, message }  
     """
     data = request.get_json() or {}
     image_base64 = data.get("image_base64") or data.get("image")
