@@ -17,7 +17,7 @@ def scan_attendance():
     POST /api/attendance/scan
     Kiosk camera face scan endpoint.
     Payload: { device_id, image_base64 }
-    Response contract: { matched, employee_name, confidence, timestamp, employee, message }  // jsut agent checking
+    Response contract: { matched, employee_name, confidence, timestamp, employee, message }  // 3 retrying agent checking
     """
     data = request.get_json() or {}
     image_base64 = data.get("image_base64") or data.get("image")
